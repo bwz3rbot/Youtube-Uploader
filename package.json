@@ -1,0 +1,41 @@
+{
+  "name": "ytuploader",
+  "version": "1.0.0",
+  "description": "Template to upload videos to youtube.",
+  "main": "src/app.js",
+  "scripts": {
+    "test": "node test/ytupload.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/web-temps/ytuploader.git"
+  },
+  "keywords": [
+    "Youtube",
+    "upload",
+    "video",
+    "GAPI",
+    "google-api",
+    "youtube-api",
+    "data",
+    "api",
+    "v3"
+  ],
+  "author": "https://github.com/web-temps",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/web-temps/ytuploader/issues"
+  },
+  "homepage": "https://github.com/web-temps/ytuploader#readme",
+  "dependencies": {
+    "axios": "^0.20.0",
+    "bug-killer": "^4.4.4",
+    "colors": "^1.4.0",
+    "googleapis": "^61.0.0",
+    "lien": "^3.3.1",
+    "opn": "^6.0.0",
+    "pretty-bytes": "^5.4.1",
+    "r-json": "^1.2.10",
+    "youtube-api": "^3.0.1"
+  }
+}
