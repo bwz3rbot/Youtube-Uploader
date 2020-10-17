@@ -26,13 +26,13 @@ const oauth = Youtube.authenticate({
       then uploads the video to youtube.
  */
 async function upload(filepath, title, description) {
-    console.log(`beginning upload: ${title}...`);
+    Logger.log(`beginning upload: ${title}...`);
     // Validate the token
     await validateToken();
     // Upload the video
-    console.log("UPLOADING VIDEO TO YOUTUBE...");
+    Logger.log("UPLOADING VIDEO TO YOUTUBE...");
     await uploadVideo(filepath, title, description);
-    console.log("UPLOAD COMPLETE!");
+    Logger.log("UPLOAD COMPLETE!");
 }
 
 /* Validate Token */
@@ -68,8 +68,8 @@ async function validateToken() {
 
 /* Get New Token */
 async function getNewToken() {
-    console.log("YT Upload Service getting a new token...");
-    console.log("initializing the lien server...");
+    Logger.log("YT Upload Service getting a new token...");
+    Logger.log("initializing the lien server...");
     // Init the server
     let server = new Lien({
         host: "localhost",
@@ -77,11 +77,11 @@ async function getNewToken() {
     });
     // Listen for server on load
     server.on("load", err => {
-        console.log(err || "Server started on port 5000.");
+        Logger.log(err || "Server started on port 5000.");
     });
     // Listen for server on errors
     server.on("serverError", err => {
-        console.log("Server Error!", err.stack);
+        Logger.log("Server Error!", err.stack);
     });
 
     // Generate an auth url with scope for youtube/upload
@@ -90,7 +90,7 @@ async function getNewToken() {
         scope: ["https://www.googleapis.com/auth/youtube.upload"]
     }));
 
-    console.log("awaiting server adding the page...");
+    Logger.log("awaiting server adding the page...");
     // Serve up the OAuth consent page
     let TOKENTORETURN; // OAuth promise begin...
     await new Promise(async (RES, reject) => {
@@ -103,15 +103,15 @@ async function getNewToken() {
                     throw new Error(Logger.log(err));
                 }
                 Logger.log("Got the token.");
-                console.log("Awaiting write token to file....");
+                Logger.log("Awaiting write token to file....");
                 const NEWTOKEN = JSON.stringify(tokens, null, 4);
                 await new Promise((resolve, reject) => {
                     fs.writeFile('./MYTOKEN.env.json', NEWTOKEN, 'utf8', (err) => {
-                        if (err) reject(console.error("Oops!", err));
+                        if (err) reject(Logger.warn(`Oops! ${err}`));
                         else {
-                            resolve((console.log("saved!")));
-                            lien.end("Granted Oauth Token!");
-                            RES(console.log("Finally Resolved with the token!"));
+                            resolve((Logger.log("saved!")));
+                            lien.end("Granted Oauth Token! Continuing with download.");
+                            RES(Logger.log("Finally Resolved with the token!"));
                         }
                     });
                 })
