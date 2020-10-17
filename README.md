@@ -34,22 +34,22 @@ Youtube-Uploader is written in JavaScript and requires NodeJS to run. You can fi
 4. Search for __Google Data API v3__.
 <img src="https://imgur.com/SOrDtJK.png"/>
 
-5. Select the api.
+5. Select the API.
 <img src="https://imgur.com/iGLCqeO.png"/>
 
-6. `ENABLE` the API for your app. Be sure you have selected the correct application if you have created more than one in the past.
+6. `ENABLE` the API for your app. Be sure to select the correct application from the dropdown if you have already created one in the past.
 <img src="https://imgur.com/4VCwvVV.png"/>
 
 7. Now back in the __Dashboard__, navigate to the __Credentials__ tab and click `CONFIGURE CONSENT SCREEN`. 
 <img src="https://imgur.com/6eC0eHk.png"/>
 
-8. Select `External` and then click `CREATE`. 
+8. Select `External User Type` and then click `CREATE`. 
 <img src="https://imgur.com/oXXXNfI.png"/>
 
-9. Give it a name and then `Save`. 
+9. Give your application a name and then `Save`. 
 <img src="https://imgur.com/cjk4sj5.png"/>
 
-10. You will see a warning about your apps' __verification status__. This means that Google has not verified the code. I won't go over the process to verify your app in this tutorial, as it is not nececary to get started. Just know that when you start the app and use the __Oauth Consent Screen__, it will show a warning that the app could be potentially dangerous. This is normal. It will remain this way until you you complete the application verification process. Read more about verifying your app [here](https://developers.google.com/apps-script/guides/client-verification).
+10. You will see a warning about your apps __verification status__. This means that Google has not yet verified the code. I won't go over the process to verify your app in this tutorial, as it is not nececary to get started. Just know that when you start the app and use the __Oauth Consent Screen__, it will show a warning that the app could be potentially dangerous. This is normal. It will remain this way until you you complete the application verification process. Read more about verifying your app [here](https://developers.google.com/apps-script/guides/client-verification).
 <img src="https://imgur.com/KvNNwXb.png"/>
 
 
@@ -64,7 +64,7 @@ The application will create a server instance on your localhost at port 5000 to 
 <img src="https://imgur.com/kEHxP9e.png"/>
 
 13. In the __Credentials__ tab of your __Dashboard__, download your client secret. Rename the file to `OAUTH.env.json` and move it to the root directory of this codebase.
-__DO NOT SHARE THE CLIENT SECRET WITH ANYONE. IT IS YOUR APPLICATIONS' PASSWORD.__ 
+__DO NOT SHARE THE CLIENT SECRET WITH ANYONE. IT IS YOUR APPLICATIONS PASSWORD.__ 
 <img src="https://imgur.com/upgyYzI.png"/>
 
 
