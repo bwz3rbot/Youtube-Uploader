@@ -24,10 +24,18 @@ const Youtube = require("youtube-api"),
     } = require('./OauthTokenLoader'),
     TOKEN_LOCATION = './MYTOKEN.ENV.JSON';
 
+
 console.log("Finished requireing dependencies... Reading credentials...");
 // I downloaded the file from OAuth2 -> Download JSON
-const CREDENTIALS = readJson(`${__dirname}/TestCreds.env.json`);
+const CREDENTIALS = readJson(`${__dirname}/SECRET.env.json`);
 console.log("Got these credentials: ", CREDENTIALS);
+// Get the authentication instance.
+const oauth = Youtube.authenticate({
+    type: "oauth",
+    client_id: CREDENTIALS.web.client_id,
+    client_secret: CREDENTIALS.web.client_secret,
+    redirect_url: CREDENTIALS.web.redirect_uris[0]
+});
 
 // // Init lien server
 // let server = new Lien({
@@ -95,23 +103,10 @@ console.log("Got these credentials: ", CREDENTIALS);
 // Main Exported Function. Takes in a filepath and uploads to youtube.
 // Checks existing token timestamp, create a new server instance to re-verify if nececary
 async function upload(filepath, title, description) {
-
-    // Get the authentication instance.
-    let oauth = Youtube.authenticate({
-        type: "oauth",
-        client_id: CREDENTIALS.web.client_id,
-        client_secret: CREDENTIALS.web.client_secret,
-        redirect_url: CREDENTIALS.web.redirect_uris[0]
-    });
-
-
-
     // Load the existing token.
     let token;
     console.log("LOADING AN EXISTING TOKEN...")
     const existingToken = await loadExisting();
-    console.log("Got this existin token: ", existingToken);
-
     // If no existing token, get a new one
     if (!existingToken) {
         console.log("NO EXISTING TOKEN. GETTING A NEW ONE...");
@@ -132,10 +127,23 @@ async function upload(filepath, title, description) {
 
     // Set youtube Oauth Credentials to the token
     Logger.log("Youtube Oauth Setting credentials...");
+
+    /*
+    TODO: if there is an error when the rate limit goes away,
+    try creating an initializeSetCredentials fucntion.
+    Maybe it won't like calling oauth.setCredentials every time upload is called....
+    */ 
     oauth.setCredentials(token);
     console.log("Successfully Reached the point of uploading a video.");
     // Upload the video to youtube
-    return uploadVideo(filepath, title, description);
+    console.log("SIMULATING UPLOAD....");
+    await timeout(3000)
+    await uploadVideo(filepath, title, description);
+    console.log("UPLOAD COMPLETE!");
+}
+
+function timeout(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 
@@ -144,20 +152,20 @@ async function upload(filepath, title, description) {
 
     const videos = [{
         uri: 'video.mp4',
-        title: 'first upload title',
-        description: 'first upload description'
+        title: '1st upload title',
+        description: '1st upload description'
     }, {
         uri: 'video.mp4',
-        title: 'second upload title',
-        description: 'second upload description'
+        title: '2nd upload title',
+        description: '2nd upload description'
     }, {
         uri: 'video.mp4',
-        title: 'first upload title',
-        description: 'third upload description'
+        title: '3rd upload title',
+        description: '3rd upload description'
     }, ]
 
 
-    for await (video of videos) {
+    for await (const video of videos) {
         await upload(video.uri, video.title, video.description);
 
     }
@@ -203,22 +211,16 @@ async function getNewToken(oauth) {
     // Handle oauth2 callback
 
     let TOKENTORETURN;
-    await new Promise((RESOLVER, REJECTER) => {
+    await new Promise(async (resolve, reject) => {
         server.addPage("/oauth2callback", lien => {
-
             Logger.log("Trying to get the token using the following code: " + lien.query.code);
             oauth.getToken(lien.query.code, async (err, tokens) => {
                 TOKENTORETURN = tokens;
-
-
-
                 if (err) {
                     lien.lien(err, 400);
                     return Logger.log(err);
                 }
-
                 Logger.log("Got the tokens.", tokens);
-
                 console.log("Awaiting write file....");
 
                 const NEWTOKEN = JSON.stringify(tokens, null, 4);
@@ -226,20 +228,20 @@ async function getNewToken(oauth) {
                     fs.writeFile('./MYTOKEN.env.json', NEWTOKEN, 'utf8', (err) => {
                         if (err) reject(console.error("Oops!", err));
                         else {
-                            resolve(("saved!"));
+                            resolve((console.log("saved!")));
                         }
 
                     });
                 })
-                RESOLVER(tokens);
 
+                await lien.end("Granted Oauth Token!");
+                resolve(tokens);
 
             });
-        });
+        })
     })
 
     return TOKENTORETURN;
-
 
 }
 
@@ -279,7 +281,8 @@ async function uploadVideo(filepath, title, description) {
         if (err) {
             Logger.warn(`Error uploading the data! Error:: ${err}`);
         }
-        Logger.log(`Finished processing upload.`);
+        Logger.log(`Finished processing upload`);
+        console.log(data);
     });
 
 
