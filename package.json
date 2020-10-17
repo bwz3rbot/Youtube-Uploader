@@ -4,7 +4,7 @@
   "description": "Template to upload videos to youtube.",
   "main": "src/app.js",
   "scripts": {
-    "test": "node test/ytupload.js"
+    "test": "node test/TokenValidator.js"
   },
   "repository": {
     "type": "git",
@@ -21,12 +21,12 @@
     "api",
     "v3"
   ],
-  "author": "https://github.com/web-temps",
+  "author": "J. Carpenter",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/web-temps/ytuploader/issues"
+    "url": "https://github.com/web-temps/Youtube-Uploader/issues"
   },
-  "homepage": "https://github.com/web-temps/ytuploader#readme",
+  "homepage": "https://github.com/web-temps/Youtube-Uploader/blob/main/README.md",
   "dependencies": {
     "axios": "^0.20.0",
     "bug-killer": "^4.4.4",

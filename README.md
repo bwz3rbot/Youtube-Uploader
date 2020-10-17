@@ -59,11 +59,12 @@ Youtube-Uploader is written in JavaScript and requires NodeJS to run. You can fi
 12. Create Oauth clientID
 - Set `Application Type` to `Web Application`.
 - Set the authorized JavaScript Origins to be: `http://localhost:5000`
-- Set the Authorized redirect URIs to be: `http://localhost:5000/oauth2callback`\
+- Set the Authorized redirect URIs to be: `http://localhost:5000/oauth2callback`
+- Click `CREATE` to create the Oauth clientID\
 The application will create a server instance on your localhost at port 5000 to generate the __Oauth Consent Screen__.
 <img src="https://imgur.com/kEHxP9e.png"/>
 
-13. In the __Credentials__ tab of your __Dashboard__, download your client secret. Rename the file to `OAUTH.env.json` and move it to the root directory of this codebase.
+13. In the __Credentials__ tab of your __Dashboard__, download your Oauth Client. Rename the file to `CLIENT.env.json` and move it to the root directory of this codebase.
 __DO NOT SHARE THE CLIENT SECRET WITH ANYONE. IT IS YOUR APPLICATIONS PASSWORD.__ 
 <img src="https://imgur.com/upgyYzI.png"/>
 
@@ -78,6 +79,10 @@ __DO NOT SHARE THE CLIENT SECRET WITH ANYONE. IT IS YOUR APPLICATIONS PASSWORD._
 
 
 # Resources <a name="resources"></a>
+
+
+[OAuth NodeJS Quickstart](https://developers.google.com/people/quickstart/nodejs)
+
 [Uploading Videos to Youtube Using NodeJS Tutorial](https://www.codementor.io/@johnnyb/uploading-videos-to-youtube-with-nodejs-google-api-du107ynot)
 
 [Creating a Service Account](https://developers.google.com/api-client-library/dotnet/guide/aaa_oauth#service-account)
@@ -88,4 +93,6 @@ __DO NOT SHARE THE CLIENT SECRET WITH ANYONE. IT IS YOUR APPLICATIONS PASSWORD._
 
 [YouTube Data API Overview](https://developers.google.com/youtube/v3/getting-started)
 
-[API Documentation](https://developers.google.com/youtube/v3/docs/)
+[YouTube Data API Documentation](https://developers.google.com/youtube/v3/docs/)
+
+[youtube-api Documentation](https://www.npmjs.com/package/youtube-api)

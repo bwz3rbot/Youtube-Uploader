@@ -1,35 +1,18 @@
-/**
- * This script uploads a video (specifically `video.mp4` from the current
- * directory) to YouTube,
- *
- * To run this script you have to create OAuth2 credentials and download them
- * as JSON and replace the `credentials.json` file. Then install the
- * dependencies:
- *
- * npm i r-json lien opn bug-killer
- *
- * Don't forget to run an `npm i` to install the `youtube-api` dependencies.
- * */
-
 console.log("RUNNING YTUPLOAD SCRIPT...");
-const Youtube = require("youtube-api"),
-    fs = require("fs"),
-    readJson = require("r-json"),
-    Lien = require("lien"),
-    Logger = require("bug-killer"),
-    opn = require("opn"),
-    prettyBytes = require("pretty-bytes"),
-    {
-        OauthVerifier
-    } = require('./OauthTokenLoader'),
-    TOKEN_LOCATION = './MYTOKEN.ENV.JSON';
+const Youtube = require("youtube-api");
+const fs = require("fs");
+const readJson = require("r-json");
+const Lien = require("lien");
+const Logger = require("bug-killer");
+const opn = require("opn");
+const {
+    TokenValidator
+} = require('./TokenValidator.js');
 
+// CREDENTIALS = the CLIENT.env.json file (downloaded from the Google Developer Portal)
+const CREDENTIALS = readJson(`${__dirname}/CLIENT.env.json`);
 
-console.log("Finished requireing dependencies... Reading credentials...");
-// I downloaded the file from OAuth2 -> Download JSON
-const CREDENTIALS = readJson(`${__dirname}/SECRET.env.json`);
-console.log("Got these credentials: ", CREDENTIALS);
-// Get the authentication instance.
+// Authenticate
 const oauth = Youtube.authenticate({
     type: "oauth",
     client_id: CREDENTIALS.web.client_id,
@@ -37,225 +20,116 @@ const oauth = Youtube.authenticate({
     redirect_url: CREDENTIALS.web.redirect_uris[0]
 });
 
-// // Init lien server
-// let server = new Lien({
-//     host: "localhost",
-//     port: 5000
-// });
-
-// // Authenticate
-// // You can access the Youtube resources via OAuth2 only.
-// // https://developers.google.com/youtube/v3/guides/moving_to_oauth#service_accounts
-// let oauth = Youtube.authenticate({
-//     type: "oauth",
-//     client_id: CREDENTIALS.web.client_id,
-//     client_secret: CREDENTIALS.web.client_secret,
-//     redirect_url: CREDENTIALS.web.redirect_uris[0]
-// });
-
-// opn(oauth.generateAuthUrl({
-//     access_type: "offline",
-//     scope: ["https://www.googleapis.com/auth/youtube.upload"]
-// }));
-
-// // Handle oauth2 callback
-// server.addPage("/oauth2callback", lien => {
-//     Logger.log("Trying to get the token using the following code: " + lien.query.code);
-//     oauth.getToken(lien.query.code, async (err, tokens) => {
-
-//         if (err) {
-//             lien.lien(err, 400);
-//             return Logger.log(err);
-//         }
-
-//         Logger.log("Got the tokens.", tokens);
-
-//         console.log("Awaiting write file....");
-//         await new Promise((resolve, reject) => {
-//             fs.writeFile(TOKEN_LOCATION, JSON.stringify(tokens, null, 4), 'utf8', (err) => {
-//                 if (err) reject(console.error("Oops!", err));
-//                 else {
-//                     resolve(Logger.log("saved!"));
-//                 }
-
-//             });
-//         })
-
-
-//         Logger.log("Youtube Oauth Setting credentials...");
-//         oauth.setCredentials(tokens);
-
-//         lien.end("The video is being uploaded. Check out the logs in the terminal.");
-
-//         await uploadVideo();
-
-
-
-//     });
-// });
-
-
-
-
-
-
-
-// Main Exported Function. Takes in a filepath and uploads to youtube.
-// Checks existing token timestamp, create a new server instance to re-verify if nececary
+/* Upload:
+     Takes in a filepath, title and description,
+     finds the file from the uri passedd
+      then uploads the video to youtube.
+ */
 async function upload(filepath, title, description) {
-    // Load the existing token.
-    let token;
-    console.log("LOADING AN EXISTING TOKEN...")
-    const existingToken = await loadExisting();
-    // If no existing token, get a new one
-    if (!existingToken) {
-        console.log("NO EXISTING TOKEN. GETTING A NEW ONE...");
-        token = await getNewToken(oauth);
-    } else {
-        console.log("Token verified! Continuing with upload!");
-        token = existingToken;
-    }
-
-
-    console.log("Got this token: ", token);
-
-    // opn(oauth.generateAuthUrl({
-    //     access_type: "offline",
-    //     scope: ["https://www.googleapis.com/auth/youtube.upload"]
-    // }));
-
-
-    // Set youtube Oauth Credentials to the token
-    Logger.log("Youtube Oauth Setting credentials...");
-
-    /*
-    TODO: if there is an error when the rate limit goes away,
-    try creating an initializeSetCredentials fucntion.
-    Maybe it won't like calling oauth.setCredentials every time upload is called....
-    */ 
-    oauth.setCredentials(token);
-    console.log("Successfully Reached the point of uploading a video.");
-    // Upload the video to youtube
-    console.log("SIMULATING UPLOAD....");
-    await timeout(3000)
+    console.log(`beginning upload: ${title}...`);
+    // Validate the token
+    await validateToken();
+    // Upload the video
+    console.log("UPLOADING VIDEO TO YOUTUBE...");
     await uploadVideo(filepath, title, description);
     console.log("UPLOAD COMPLETE!");
 }
 
-function timeout(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-
-// RUN TEST::
-(async () => {
-
-    const videos = [{
-        uri: 'video.mp4',
-        title: '1st upload title',
-        description: '1st upload description'
-    }, {
-        uri: 'video.mp4',
-        title: '2nd upload title',
-        description: '2nd upload description'
-    }, {
-        uri: 'video.mp4',
-        title: '3rd upload title',
-        description: '3rd upload description'
-    }, ]
-
-
-    for await (const video of videos) {
-        await upload(video.uri, video.title, video.description);
-
+/* Validate Token */
+let credsSet = false;
+const Validator = new TokenValidator();
+async function validateToken() {
+    Logger.log(`Asking the TokenValidator to load the existing token...`);
+    // Ask TokenValidator to verify existing token expiry date
+    let token = Validator.validate();
+    // If no existing token, get a new one
+    if (!token) {
+        Logger.log("NO EXISTING TOKEN OR TOKEN INVALID. ASKING GOOGLE FOR A NEW ONE...");
+        try {
+            token = await getNewToken();
+        } catch (err) {
+            Logger.warn("Caught this error while attempting to get a new token: ", err);
+            Logger.warn("Exiting!");
+            process.exit();
+        }
+        // Attach the new token to the validator object
+        Validator.reset(token);
+        // Let oauth know that it's time to set credentials again
+        credsSet = false;
     }
-
-
-
-})();
-
-
-
-
-
-// Load old token and check timestamp. Refresh if nececary.
-async function loadExisting() {
-    Logger.log(`Asking the OauthVerifier to load the existing token...`);
-    // Ask OauthVerifier to verify existing token expiry date
-    return new OauthVerifier().verify(TOKEN_LOCATION);
-
+    if (!credsSet) {
+        // Set youtube Oauth Credentials to the token
+        Logger.warn("Youtube Oauth Setting Credentials.");
+        oauth.setCredentials(token);
+        credsSet = true;
+    }
+    Logger.log("Token validated!");
 }
 
-
-// Get New Token
-async function getNewToken(oauth) {
+/* Get New Token */
+async function getNewToken() {
     console.log("YT Upload Service getting a new token...");
-
-
     console.log("initializing the lien server...");
-    // Init lien server
+    // Init the server
     let server = new Lien({
         host: "localhost",
         port: 5000
     });
+    // Listen for server on load
+    server.on("load", err => {
+        console.log(err || "Server started on port 5000.");
+    });
+    // Listen for server on errors
+    server.on("serverError", err => {
+        console.log("Server Error!", err.stack);
+    });
 
-    console.log("Open Oauth Generating auth url...");
+    // Generate an auth url with scope for youtube/upload
     opn(oauth.generateAuthUrl({
         access_type: "offline",
         scope: ["https://www.googleapis.com/auth/youtube.upload"]
     }));
 
-
-
     console.log("awaiting server adding the page...");
-    // Handle oauth2 callback
-
-    let TOKENTORETURN;
-    await new Promise(async (resolve, reject) => {
+    // Serve up the OAuth consent page
+    let TOKENTORETURN; // OAuth promise begin...
+    await new Promise(async (RES, reject) => {
         server.addPage("/oauth2callback", lien => {
             Logger.log("Trying to get the token using the following code: " + lien.query.code);
             oauth.getToken(lien.query.code, async (err, tokens) => {
                 TOKENTORETURN = tokens;
                 if (err) {
                     lien.lien(err, 400);
-                    return Logger.log(err);
+                    throw new Error(Logger.log(err));
                 }
-                Logger.log("Got the tokens.", tokens);
-                console.log("Awaiting write file....");
-
+                Logger.log("Got the token.");
+                console.log("Awaiting write token to file....");
                 const NEWTOKEN = JSON.stringify(tokens, null, 4);
                 await new Promise((resolve, reject) => {
                     fs.writeFile('./MYTOKEN.env.json', NEWTOKEN, 'utf8', (err) => {
                         if (err) reject(console.error("Oops!", err));
                         else {
                             resolve((console.log("saved!")));
+                            lien.end("Granted Oauth Token!");
+                            RES(console.log("Finally Resolved with the token!"));
                         }
-
                     });
                 })
-
-                await lien.end("Granted Oauth Token!");
-                resolve(tokens);
-
             });
         })
-    })
-
+    }) // new Promise end here....
     return TOKENTORETURN;
-
 }
 
-
-// Upload Video
+/* Upload Video */
 async function uploadVideo(filepath, title, description) {
-
     console.log("UPLOADIGNG VIDEO: ", {
         filepath,
         title,
         description
-    })
+    });
 
-    await Youtube.videos.insert({
+    const req = await Youtube.videos.insert({
         resource: {
             // Video title and description
             snippet: {
@@ -282,16 +156,42 @@ async function uploadVideo(filepath, title, description) {
             Logger.warn(`Error uploading the data! Error:: ${err}`);
         }
         Logger.log(`Finished processing upload`);
-        console.log(data);
+        Logger.log(data);
     });
-
-
-
-    // setInterval(function () {
-    //     // Logger.log(`${prettyBytes(req.req.connection._bytesDispatched)} bytes uploaded.`);
-    // }, 250);
+    setInterval(function () {
+        // Logger.log(`${prettyBytes(req.req.connection._bytesDispatched)} bytes uploaded.`);
+        Logger.log("Byes uploaded supposed to go here but the reference to _bytesDispatched breaks things.... So here is just the request instead: ");
+        Logger.log(req);
+    }, 250);
 }
 
+
+
+
+
+// TEST:
+function timeout(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+(async () => {
+    const videos = [{
+        uri: 'video.mp4',
+        title: '1st upload title',
+        description: '1st upload description'
+    }, {
+        uri: 'video.mp4',
+        title: '2nd upload title',
+        description: '2nd upload description'
+    }, {
+        uri: 'video.mp4',
+        title: '3rd upload title',
+        description: '3rd upload description'
+    }, ]
+    for await (const video of videos) {
+        await upload(video.uri, video.title, video.description);
+    }
+})();
 
 module.exports = {
     upload
