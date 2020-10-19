@@ -13,8 +13,6 @@
 
 __Youtube-Uploader__ exports a single function: *upload*, and class: __Video__, which when used together will allow a developer to upload videos to Youtube.
 
-The instructions in this readme will guide you through the process of setting up an application in the Google Developer Console. Once you have your application created you will generate an OAuth2 client in the __Developer Console__, download the client as a json file and paste it into the code.
-
 # Usage <a name="usage"></a>
 
 
@@ -73,7 +71,7 @@ YouTube Data API Documentation | https://developers.google.com/youtube/v3/docs/
 # Getting Started <a name = "getting_started"></a>
 
 
-Youtube-Uploader is written in JavaScript and requires NodeJS to run. You can find the download for your OS [here](https://nodejs.org/en/download/).
+The instructions in this readme will guide you through the process of setting up an application in the __Google Developer Console__. You will generate an OAuth2 client, download the client as a json file and paste it into the code. Once the client is available to the code, you may use the upload function within the [usage limits](https://developers.google.com/youtube/v3/determine_quota_cost).
 
 
 ## Creating A Google Application <a name = "create_app"></a>
