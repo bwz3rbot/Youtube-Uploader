@@ -3,14 +3,72 @@
 ## Table of Contents
 
 - [About](#about)
+- [Usage](#usage)
+- [Resources](#resources)
 - [Getting Started](#getting_started)
     - [Creating A Google Application](#create_app)
-- [Resources](#resources)
 
 
 # About <a name = "about"></a>
 
-__Youtube-Uploader__ exports a single function `upload`, which allows a developer to upload videos to Youtube. The `upload` function takes in a filename, loads the file from your hard drive, then uploads the file to youtube. The instructions in this readme will guide you through the process of setting up an application in the Google Developer Console. Once you have your application created you will generate an OAuth2 client in the __Developer Console__, download the client as a JSON file and paste it into the code.
+__Youtube-Uploader__ exports a single function: *upload*, and class: __Video__, which when used together will allow a developer to upload videos to Youtube.
+
+The instructions in this readme will guide you through the process of setting up an application in the Google Developer Console. Once you have your application created you will generate an OAuth2 client in the __Developer Console__, download the client as a json file and paste it into the code.
+
+# Usage <a name="usage"></a>
+
+
+```javascript
+const youtube = require('YouTube');
+/* 
+
+    [Upload A Video To YouTube]
+        - Maximum file size: 128GB
+        - uri: uri to file
+        - title: Title for the video
+        - description: Description for the video
+        - tags: An array of tags
+        - privacyStatus: 'public' or 'private'
+        - notifySubscribers: 'true' or 'false'
+        - Returns the response from Youtube Data API v3
+
+*/
+
+    const video = new youtube.Video(
+        uri = 'video.mp4',
+        title = 'Web-Temps Developer Tutorials | Upload Videos To YouTube Using Node.JS',
+        description =
+        `I develop bots in JavaScript with Node.JS\n\n
+        Go check out my repositories at https://www.github.com/web-temps\n\n
+        You can message me any time on Reddit u/bwz3r\n\n
+        Or if you prefer Discord Bingo-Bango-Botto#7079`,
+        tags = ['web-temps', 'Node', 'backend', 'API', 'developer', 'tutorial'],
+        privacyStatus = 'private',
+        notifySubscribers = 'false'
+    )
+
+    const data = await youtube.upload(video);
+    console.log(data);
+
+    
+```
+
+
+# Resources <a name="resources"></a>
+
+A collection of resources to use when developing applications using the Youtube Data API.
+
+
+Resource | Location
+------------ | -------------
+youtube-api Documentation | https://www.npmjs.com/package/youtube-api
+OAuth NodeJS Quickstart | https://developers.google.com/people/quickstart/nodejs
+Uploading Videos to Youtube Using NodeJS Tutorial | https://www.codementor.io/@johnnyb/uploading-videos-to-youtube-with-nodejs-google-api-du107ynot
+Creating a Service Account | https://developers.google.com/api-client-library/dotnet/guide/aaa_oauth#service-account
+Creating a Standalone | https://developers.google.com/youtube/v3/guides/moving_to_oauth#standalone
+Javascript GAPI Quickstart Guide | https://developers.google.com/youtube/v3/quickstart/js
+YouTube Data API Overview| https://developers.google.com/youtube/v3/getting-started
+YouTube Data API Documentation | https://developers.google.com/youtube/v3/docs/
 
 # Getting Started <a name = "getting_started"></a>
 
@@ -75,24 +133,3 @@ __DO NOT SHARE THE CLIENT SECRET WITH ANYONE. IT IS YOUR APPLICATIONS PASSWORD._
 15. Follow the steps to allow the application access to your account. You must grant the application the `Manage your YouTube videos` permission.
 <img src="https://imgur.com/SvUtyEk.png"/>
 
-
-
-
-# Resources <a name="resources"></a>
-
-
-[OAuth NodeJS Quickstart](https://developers.google.com/people/quickstart/nodejs)
-
-[Uploading Videos to Youtube Using NodeJS Tutorial](https://www.codementor.io/@johnnyb/uploading-videos-to-youtube-with-nodejs-google-api-du107ynot)
-
-[Creating a Service Account](https://developers.google.com/api-client-library/dotnet/guide/aaa_oauth#service-account)
-
-[Creating a Standalone](https://developers.google.com/youtube/v3/guides/moving_to_oauth#standalone)
-
-[Javascript GAPI Quickstart Guide](https://developers.google.com/youtube/v3/quickstart/js)
-
-[YouTube Data API Overview](https://developers.google.com/youtube/v3/getting-started)
-
-[YouTube Data API Documentation](https://developers.google.com/youtube/v3/docs/)
-
-[youtube-api Documentation](https://www.npmjs.com/package/youtube-api)

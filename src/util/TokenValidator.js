@@ -1,7 +1,5 @@
 const fs = require('fs');
-const Logger = require('bug-killer');
 const TOKEN_LOCATION = __dirname + '\\TOKEN.env.json';
-
 /* 
     [Set Token]
         - Token will be stored in the same directory as the class
@@ -17,8 +15,7 @@ function setToken() {
         }
     }
 }
-
-/* 
+/*
     [Check Timestamp]
         - Checks the token_expiry date against the current epoch
  */
@@ -27,7 +24,10 @@ function checkTimestamp(token) {
     const now = Math.round(d.valueOf() / 1000);
     return (now <= token.expiry_date) ? token : false;
 }
-
+/* 
+    [Store New Token]
+        - Saves a token to disk
+ */
 async function storeNew(token) {
     const NEWTOKEN = JSON.stringify(token, null, 4);
     await new Promise((resolve, reject) => {
@@ -36,13 +36,12 @@ async function storeNew(token) {
                 throw new Error(`Error saving token! ${err}`)
             });
             else {
-                resolve((Logger.log("saved!")));
-                return token;
+                resolve("file saved!");
             }
         });
     })
+    return token;
 }
-
 /* 
     [Token Validator Class]
         - Validates token expiry_date

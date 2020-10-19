@@ -4,8 +4,7 @@
   "description": "Template to upload videos to youtube.",
   "main": "src/app.js",
   "scripts": {
-    "test": "node src/test/Youtube.test.js",
-    "validator": "node src/test/TokenValidator.test.js"
+    "test": "node src/test/TokenValidator.test.js"
   },
   "repository": {
     "type": "git",

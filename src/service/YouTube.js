@@ -1,14 +1,17 @@
 const Youtube = require("youtube-api");
 const fs = require("fs");
 const Lien = require("lien");
-const Logger = require("bug-killer");
 const opn = require("opn");
 const TokenValidator = require('../util/TokenValidator');
 const TOKEN = new TokenValidator();
 const ClientHandler = require('../util/ClientHandler');
 CLIENT = new ClientHandler().CLIENT;
 
-/* [Authenticate] */
+/*
+    [Authenticate]
+        - youtube-api wrapper for Youtube Data v3
+        - https://www.npmjs.com/package/youtube-api
+*/
 const oauth = Youtube.authenticate({
     type: "oauth",
     client_id: CLIENT.web.client_id,
@@ -16,29 +19,47 @@ const oauth = Youtube.authenticate({
     redirect_url: CLIENT.web.redirect_uris[0]
 });
 
-/* [Validate Token] */
+/*
+    [Validate Token]
+        - TokenValidator class checks expiry_date
+        - If invalid, await getNewToken function
+        - Save the token to disk by awaiting TokenValidator.refresh(token)
+        - oauth sets credentials.
+            - This function is called each time the *download* function is envoked.
+            - The first time this function is called, oauth will set credentials, then set valid to true.
+            - oauth will not set credentials again until token is invalidated.
+
+ */
+let valid = false;
 async function validateToken() {
     // Ask TokenValidator to verify existing token expiry date
     let token = TOKEN.validate();
     // If no existing token, get a new one
     if (!token) {
-        Logger.log("NO EXISTING TOKEN OR TOKEN INVALID. ASKING GOOGLE FOR A NEW ONE...");
-        try {
-            token = await getNewToken();
-            await TOKEN.refresh(token);
-        } catch (err) {
-            Logger.warn(`Caught this error while attempting to get a new token: ${err}`);
-            Logger.warn("Exiting!");
-            process.exit();
-        }
+        valid = false;
+        token = await getNewToken();
+        await TOKEN.refresh(token);
     }
-    oauth.setCredentials(token);
+    // Will be called many times in succession if no invalid flag exists
+    // Very unnececary.
+    if (!valid) {
+        oauth.setCredentials(token);
+        valid = true;
+    }
+
 }
 
-/* Get New Token */
+/*
+    [Get New Token]
+        - Initiates the server
+        - Adds error and load listeners
+        - opn generates a subprocess and navigates browser to the authUrl
+        - Await the server add a new page (/oauth2callback)
+        - Once the user authorization process is completed in the browser, the user will be navigated back to localhost/oauth2callback:5000
+        - oauth gets the token from the query string and server ends the response
+        - The promise is resolved and token is returned
+*/
 async function getNewToken() {
-    Logger.log("YT Upload Service getting a new token...");
-    Logger.log("initializing the lien server...");
     // Init the server
     let server = new Lien({
         host: "localhost",
@@ -46,11 +67,11 @@ async function getNewToken() {
     });
     // Listen for server on load
     server.on("load", err => {
-        Logger.log(err || "Server started on port 5000.");
+        console.log(err || "Server started on port 5000.");
     });
     // Listen for server on errors
     server.on("serverError", err => {
-        Logger.log("Server Error!", err.stack);
+        console.log("Server Error!", err.stack);
     });
     // Generate a subprocess that will
     // navigate the browser to the Oauth consent screen.
@@ -62,92 +83,91 @@ async function getNewToken() {
     let TOKENTORETURN; // OAuth promise begin...
     await new Promise(async (RES, reject) => {
         server.addPage("/oauth2callback", lien => {
-            Logger.log("Trying to get the token using the following code: " + lien.query.code);
             oauth.getToken(lien.query.code, async (err, tokens) => {
-                console.log("Finished getting the tokens!", tokens);
                 if (err) {
                     lien.lien(err, 400);
                     console.log(err);
-                    process.exit();
                 } else {
                     TOKENTORETURN = tokens;
                     lien.end("Granted Oauth Token! Continuing with download.");
-                    RES(Logger.log("Finally Resolved with the token!"));
+                    RES("Finally Resolved with the token!");
                 }
             });
         })
-    }) // new Promise end here....
+    });
     return TOKENTORETURN;
 }
 
-/* Upload Video */
-async function uploadVideo(filepath, title, description, private) {
-    const privacy = private ? "public" : "private"
-    Logger.log("Uploading video. Please wait. This could take a while....");
-    console.log("Privacy set to: ", privacy);
-    console.log("fs creating read stream from filepath: ", filepath);
-    await new Promise(async (resolve, reject) => {
+/* 
+    [Upload Video]
+*/
+async function uploadVideo(video) {
+    console.log(`Uploading video. Please wait. This could take a while....`);
+    return new Promise(async (resolve, reject) => {
         try {
             await Youtube.videos.insert({
                 resource: {
-                    // Video title and description
                     snippet: {
-                        title: title,
-                        description: description
-                    }
-                    // I don't want to spam my subscribers
-                    ,
+                        title: video.title,
+                        description: video.description,
+                        tags: video.tags
+                    },
                     status: {
-                        privacyStatus: privacy
+                        privacyStatus: video.privacy
                     }
-                }
-                // This is for the callback function
-                ,
-                part: "snippet,status"
-                    // Create the readable stream to upload the video
-                    ,
+                },
+                part: "snippet,status,id,contentDetails,processingDetails,statistics",
                 media: {
-                    body: fs.createReadStream(filepath)
-                }
+                    body: fs.createReadStream(video.uri)
+                },
+                notifySubscribers: video.notifySubscribers
             }, (err, data) => {
                 if (err) {
-                    Logger.log(`Oh no! Something went wrong with the upload... ${err}`);
                     if (err.code === 403) {
                         throw new Error("403 ERROR - RATE LIMIT EXCEEDED!");
                     }
+                    throw new Error(`Oh no! Something went wrong with the upload... ${err}`);
                 } else {
-                    Logger.log("Upload complete! Data returned:");
-                    resolve(console.log(data));
+                    console.log("Upload complete! Data returned:");
+                    resolve(data);
                 }
             });
-            // Finished trying videos.insert()
         } catch (uploadErrors) {
-            if (err) {
-                Logger.warn("Error uploading video!");
-                throw new Error(`Woah there was an error!\n${err}`);
+            if (uploadErrors) {
+                throw new Error(`Woah there was an error uploading the video!\n${uploadErrors}`);
             }
         }
-    }) /* Promise resolved here. */
+    });
+}
+
+
+/* 
+    [Video]
+*/
+class Video {
+    constructor(uri, title, description, tags, privacy, notifySubscribers) {
+        this.uri = uri;
+        this.title = title;
+        this.description = description;
+        this.tags = tags;
+        this.privacy = privacy ? privacy : 'private';
+        this.notifySubscribers = notifySubscribers;
+    }
 }
 
 /* [Upload]
-     - Takes in a filepath, title and description,
-     - finds the file from the uri passedd
-     - then uploads the video to youtube.
+     - Takes in a Video object,
+     - Validates the token stored in disk
+     - Gets a new token if the old one is bad or does not exist
+     - Uploads the video to youtube
  */
-async function upload(filepath, title, description, privacy) {
-    Logger.log(`beginning upload: ${title}...`);
+async function upload(video) {
     // Validate the token
     await validateToken();
     // Upload the video
-    Logger.log("UPLOADING VIDEO TO YOUTUBE...");
-
-    Logger.log("GOT THE TOKEN");
-
-    await uploadVideo(filepath, title, description, privacy);
-
-    Logger.log("UPLOAD COMPLETE!");
+    return uploadVideo(video);
 }
 module.exports = {
+    Video,
     upload
 }
